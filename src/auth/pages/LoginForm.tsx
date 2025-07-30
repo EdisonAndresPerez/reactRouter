@@ -32,13 +32,29 @@ import { Label } from "@/components/ui/label"
 import loginImage from "../../assets/img.png"
 import { Link, useNavigate } from "react-router"
 
+import { useMutation } from '@tanstack/react-query'
+import { loginUser } from '../../fakeData/fakeData'
+
+
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
 
+  const { mutate: loginMutate, isPending } = useMutation({
+    mutationFn: loginUser,
+    onSuccess: (data) => {
+      // Guardar el token en localStorage
+      localStorage.setItem('auth_token', data.token);
+      console.log('TOKEN:', data.token)
+      navigate('/chat', { replace: true });
+    },
+    onError: () => {
+      alert('Token inválido');
+    }
+  });
+
   const onIphoneLogin = () => {
-    navigate('/chat', { replace: true });
-    console.log("Login with iPhone clicked");
+    loginMutate();
   }
 
 
@@ -77,6 +93,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
 
                 <Button
+                type="button"
                 onClick={onIphoneLogin}
                  variant="outline"
                   className="w-full cursor-pointer active:animate-bounce">

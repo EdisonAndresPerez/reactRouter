@@ -7,6 +7,8 @@ import { RegisterForm} from './auth/pages/RegisterForm';
 
 import { sleep } from './lib/sleep';
 import { PrivateRouter } from './auth/components/PrivateRouter';
+import { useQuery } from '@tanstack/react-query';
+import { checkAuth } from './fakeData/fakeData';
 
 /**
  * AppRouter - Enrutador principal de la aplicación
@@ -39,6 +41,30 @@ const NoChatSelectedPage = lazy(
 );
 
 export const AppRouter = () => {
+  const {data: user, isLoading, isError, error } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      return checkAuth(token);
+    }
+
+  })
+
+  if (isLoading) {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <span className="text-primary font-semibold text-lg">Validando sesión...</span>
+      </div>
+    </div>
+  );
+}
+
+
   return (
     <BrowserRouter>
       <Routes>
@@ -54,7 +80,7 @@ export const AppRouter = () => {
           <Route path="/auth/register" element={<RegisterForm />} />
           {/* <Route path="login" element={<Login />} /> */}
           {/* <Route path="/auth" element={<Navigate to="/auth/login" />} /> */}
-        </Route>
+        </Route> 
 
         {/*
           Rutas del chat:
@@ -81,7 +107,7 @@ export const AppRouter = () => {
           <Route
             index
             element={
-              <PrivateRouter isAuthenticated={false}>
+              <PrivateRouter isAuthenticated={!!user}>
                 <NoChatSelectedPage />
               </PrivateRouter>
             }
@@ -89,7 +115,7 @@ export const AppRouter = () => {
           <Route
             path="/chat/:clientId"
             element={
-              <PrivateRouter isAuthenticated={false}>
+              <PrivateRouter isAuthenticated={!!user}>
                 <ChatPage />
               </PrivateRouter>
             }

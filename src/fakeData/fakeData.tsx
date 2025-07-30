@@ -39,8 +39,8 @@ export const loginUser = async () => {
   await sleep(1200);
   return {
     id: 'U1-12345',
-    name: 'Fernando Herrera',
-    email: 'fherrera@gmail.com',
+    name: 'Edison Perez',
+    email: 'edisonperez@gmail.com',
     token: 'token-1234567890',
   };
 };
@@ -65,6 +65,7 @@ export const loginUser = async () => {
  *   console.log('Token inválido');
  * }
  */
+
 export const checkAuth = async (token: string) => {
   await sleep(500);
 
@@ -76,7 +77,7 @@ export const checkAuth = async (token: string) => {
 
   return {
     id: 'U1-12345',
-    name: 'Fernando Herrera',
+    name: 'Edison Perez',
   };
 };
 
