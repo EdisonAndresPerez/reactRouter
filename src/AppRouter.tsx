@@ -1,9 +1,9 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
 
 import { AuthLayout } from './auth/layout/AuthLayout';
 import { LoginForm } from './auth/pages/LoginForm';
-import { RegisterForm} from './auth/pages/RegisterForm';
+import { RegisterForm } from './auth/pages/RegisterForm';
 
 import { sleep } from './lib/sleep';
 import { PrivateRouter } from './auth/components/PrivateRouter';
@@ -40,96 +40,105 @@ const NoChatSelectedPage = lazy(
   async () => import('./chat/pages/noChatSelectedPage')
 );
 
-export const AppRouter = () => {
-  const {data: user, isLoading, isError, error } = useQuery({
+// Componente interno para usar useNavigate y la lógica de autenticación
+function AppRoutes() {
+  const navigate = useNavigate();
+
+  const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => {
       const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('No token found');
-      }
+      if (!token) throw new Error('No token found');
       return checkAuth(token);
+    },
+    refetchInterval: 2000, // cada 2 segundos valida el token
+    retry: false,
+    onError: () => {
+      navigate('/auth', { replace: true });
     }
-
-  })
+  });
 
   if (isLoading) {
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        <span className="text-primary font-semibold text-lg">Validando sesión...</span>
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <span className="text-primary font-semibold text-lg">Validando sesión...</span>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* 
+        Rutas de autenticación:
+        - /auth: Muestra el layout de autenticación (AuthLayout)
+        - /auth (index): Muestra el formulario de login
+        - /auth/register: Muestra el formulario de registro
+        - <Outlet /> en AuthLayout permite mostrar la página hija según la subruta
+      */}
+      <Route path="/auth" element={<AuthLayout />}>
+        <Route index element={<LoginForm />} />
+        <Route path="/auth/register" element={<RegisterForm />} />
+        {/* <Route path="login" element={<Login />} /> */}
+        {/* <Route path="/auth" element={<Navigate to="/auth/login" />} /> */}
+      </Route>
+
+      {/* 
+        Rutas del chat:
+        - /chat: Muestra el layout del chat (ChatLayout) usando carga perezosa
+        - Suspense muestra un spinner mientras se descarga el layout
+        - /chat (index): Muestra la pantalla de “ningún chat seleccionado”
+        - /chat/:clientId: Muestra el chat con el cliente seleccionado
+        - <Outlet /> en ChatLayout permite mostrar la página hija según la subruta
+      */}
+      <Route
+        path="/chat"
+        element={
+          <Suspense
+            fallback={
+              <div className="flex h-screen w-full items-center justify-center bg-background">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              </div>
+            }
+          >
+            <ChatLayout />
+          </Suspense>
+        }
+      >
+        <Route
+          index
+          element={
+            <PrivateRouter isAuthenticated={!!user}>
+              <NoChatSelectedPage />
+            </PrivateRouter>
+          }
+        />
+        <Route
+          path="/chat/:clientId"
+          element={
+            <PrivateRouter isAuthenticated={!!user}>
+              <ChatPage />
+            </PrivateRouter>
+          }
+        />
+      </Route>
+
+      {/* 
+        Redirecciones:
+        - /: Redirige a /auth
+        - Cualquier ruta no definida (*): Redirige a /auth
+      */}
+      <Route path="/" element={<Navigate to="/auth" />} />
+      <Route path="*" element={<Navigate to="/auth" />} />
+    </Routes>
   );
 }
 
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/*
-          Rutas de autenticación:
-          - /auth: Muestra el layout de autenticación (AuthLayout)
-          - /auth (index): Muestra el formulario de login
-          - /auth/register: Muestra el formulario de registro
-          - <Outlet /> en AuthLayout permite mostrar la página hija según la subruta
-        */}
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route index element={<LoginForm />} />
-          <Route path="/auth/register" element={<RegisterForm />} />
-          {/* <Route path="login" element={<Login />} /> */}
-          {/* <Route path="/auth" element={<Navigate to="/auth/login" />} /> */}
-        </Route> 
-
-        {/*
-          Rutas del chat:
-          - /chat: Muestra el layout del chat (ChatLayout) usando carga perezosa
-          - Suspense muestra un spinner mientras se descarga el layout
-          - /chat (index): Muestra la pantalla de “ningún chat seleccionado”
-          - /chat/:clientId: Muestra el chat con el cliente seleccionado
-          - <Outlet /> en ChatLayout permite mostrar la página hija según la subruta
-        */}
-        <Route
-          path="/chat"
-          element={
-            <Suspense
-              fallback={
-                <div className="flex h-screen w-full items-center justify-center bg-background">
-                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              }
-            >
-              <ChatLayout />
-            </Suspense>
-          }
-        >
-          <Route
-            index
-            element={
-              <PrivateRouter isAuthenticated={!!user}>
-                <NoChatSelectedPage />
-              </PrivateRouter>
-            }
-          />
-          <Route
-            path="/chat/:clientId"
-            element={
-              <PrivateRouter isAuthenticated={!!user}>
-                <ChatPage />
-              </PrivateRouter>
-            }
-          />
-        </Route>
-
-        {/*
-          Redirecciones:
-          - /: Redirige a /auth
-          - Cualquier ruta no definida (*): Redirige a /auth
-        */}
-        <Route path="/" element={<Navigate to="/auth" />} />
-        <Route path="*" element={<Navigate to="/auth" />} />
-      </Routes>
-    </BrowserRouter>
-  );
-};
+// Solo este export cambió respecto a tu versión original
+export const AppRouter = () => (
+  <BrowserRouter>
+    <AppRoutes />
+  </BrowserRouter>
+);

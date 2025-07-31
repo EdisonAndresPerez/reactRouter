@@ -40,8 +40,11 @@ import { Outlet } from 'react-router';
 import { Link } from 'react-router';
 import { X } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 import { ContactList } from '../components/ContactList';
 import { ContactInfo } from '../components/contact-details/ContactInfo';
 import { NoContactSelected } from '../components/contact-details/NoContactSelected';
@@ -94,6 +97,20 @@ import { ContactDetails } from '../components/contact-details/ContactDetails';
  * </Route>
  */
 export default function ChatLayout() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const handleLogout = () => {
+    // Limpia el token
+    localStorage.removeItem('auth_token');
+    // Limpia el cache del usuario autenticado
+    queryClient.removeQueries({ queryKey: ['user'] });
+    // Navega al login
+    navigate('/auth', { replace: true });
+  };
+
+
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -102,11 +119,21 @@ export default function ChatLayout() {
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-full bg-primary" />
             <Link to="/chat">
-            <span className="font-semibold">NexTalk</span>
+              <span className="font-semibold">NexTalk</span>
             </Link>
           </div>
         </div>
         <ContactList />
+        <div className="mt-auto p-4">
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2 cursor-pointer"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -132,7 +159,7 @@ export default function ChatLayout() {
           <div className="h-14 border-b px-4 flex items-center">
             <h2 className="font-medium">Contact details</h2>
           </div>
-          <ContactDetails/>
+          <ContactDetails />
           {/* <ContactInfo /> */}
           {/*<NoContactSelected />
           {/* <ContactInfoSkeleton /> */}
