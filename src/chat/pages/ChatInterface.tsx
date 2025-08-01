@@ -23,7 +23,7 @@
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Copy, Download, ThumbsUp, ThumbsDown, Send } from "lucide-react"
-import { useState } from "react"
+import React, { useState } from "react"
 import { useQuery } from "@tanstack/react-query";
 import { getClientMessages } from "@/fakeData/fakeData";
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,20 @@ const { clientId } = useParams();
     queryFn: () => getClientMessages(clientId ?? ""),
     enabled: !!clientId,
   });
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log("Mensaje enviado:", input);
+    setInput('');
+  }
+
+
+
+
+
+
+
+
   return (
     <div className="flex-1 flex flex-col">
       <ScrollArea className="flex-1 p-4">
@@ -96,7 +110,7 @@ const { clientId } = useParams();
         </div>
       </ScrollArea>
       <div className="p-4 border-t">
-        <div className="flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <Textarea
             placeholder="Type a message as a customer"
             value={input}
@@ -107,7 +121,8 @@ const { clientId } = useParams();
             <Send className="h-4 w-4" />
             <span>Send</span>
           </Button>
-        </div>
+        </form>
+
       </div>
     </div>
   )
